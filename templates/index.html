@@ -1,19 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ title }}</title>
+    <!-- url_for('static', ...) tells Flask to look in the 'static' folder for our CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='main.css') }}">
-
+</head>
 <body>
-    <div class="App">
-        <header class="App-header">
-            <img src="{{ url_for('static', filename='Octocat.png') }}" class="App-logo" alt="logo" />
-            <p>
-                GitHub Codespaces <span class="heart">♥️</span> Flask
-            </p>
-            <p class="small">
-                Edit <code>templates/index.html</code> and refresh to see your changes!
-            </p>
-        </header>
-    </div>
-</body>
 
+    <header>
+        <h1>Word<span class="highlight">4</span></h1>
+    </header>
+
+    <div id="board"></div>
+
+    <!-- Message which only shows up when the game has ended. Call a reset. -->
+    <div id="message">
+        <h2 id="status-text"></h2>
+        <button onclick="resetGame()" class="reset-btn">Play Again</button>
+    </div>
+
+    <div class="keyboard">
+        <div class="kb-row" id="kb-row-1"></div>
+        <div class="kb-row" id="kb-row-2"></div>
+        <div class="kb-row" id="kb-row-3"></div>
+    </div>
+
+    <script>
+        // Define how many rows (guesses) and columns (letters in a word)
+        const ROWS = 6;
+        const COLS = 4;
+        let currentRow = 0; // Track how many guesses we have left
+        let currentGuess = ""; // Track what's the current guess.
+        let isGameOver = false; // Track whether we should be getting new inputs?
+
+        // Build the game board rows and tiles
+        const board = document.getElementById('board');
+        for (let i = 0; i < ROWS; i++) {
+            const rowDiv = document.createElement('div');
+            rowDiv.className = "row";
+            for (let j = 0; j < COLS; j++) {
+                const tile = document.createElement('div');
+                tile.className = "tile";
+                tile.id = `tile-${i}-${j}`;
+                rowDiv.appendChild(tile);
+            }
+            board.appendChild(rowDiv);
+        }
+
+        // Virtual keyboard layout
+        const kbLayout = ["QWERTYUIOP", "ASDFGHJKL", ["ENTER", "Z", "X", "C", "V", "B", "N", "M", "DEL"]];
+        kbLayout.forEach((row, idx) => {
+            const container = document.getElementById(`kb-row-${idx + 1}`);
+            const keys = Array.isArray(row) ? row : row.split('');
+            keys.forEach(key => {
+                const btn = document.createElement('button');
+                btn.textContent = key === "DEL" ? "←" : key;
+                btn.className = "key";
+                if (key.length > 1) btn.classList.add('key-large');
+                btn.onclick = () => handleInput(key);
+                container.appendChild(btn);
+            });
+        });
+
+        function handleInput(key) {
+            // Function to collect the user's keypresses and respond to them. 
+            if (isGameOver) return;
+            if (key === "ENTER" || key === "Enter") {
+                if (currentGuess.length === COLS) submitGuess();
+            } else if (key === "DEL" || key === "Backspace") {
+                currentGuess = currentGuess.slice(0, -1);
+                updateDisplay();
+            } else if (/^[a-zA-Z]$/.test(key) && currentGuess.length < COLS) {
+                currentGuess += key.toUpperCase();
+                updateDisplay();
+            }
+        }
+
+        function updateDisplay() {
+            for (let j = 0; j < COLS; j++) {
+                const tile = document.getElementById(`tile-${currentRow}-${j}`);
+                tile.textContent = currentGuess[j] || "";
+            }
+        }
+
+        async function submitGuess() {
+            const response = await fetch('/check', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ guess: currentGuess })
+            });
+            const data = await response.json();
+
+            // Color the tiles based on results
+            data.results.forEach((res, j) => {
+                const tile = document.getElementById(`tile-${currentRow}-${j}`);
+                tile.classList.add(`tile-${res.status}`);
+            });
+
+            if (data.won) {
+                endGame(`Genius! The word was ${data.target} 🎉`);
+            } else if (currentRow === ROWS - 1) {
+                endGame(`Nice try! The word was ${data.target}.`);
+            } else {
+                currentRow++;
+                currentGuess = "";
+            }
+        }
+
+        // Display the window which shows the message. 
+        function endGame(msg) {
+            isGameOver = true;
+            document.getElementById('status-text').textContent = msg;
+            document.getElementById('message').classList.add('visible');
+        }
+
+        async function resetGame() {
+            await fetch('/reset', { method: 'POST' });
+            window.location.reload();
+        }
+
+        // This is where we tell the window to listen to our keyboard inputs
+        // and respond in a custom way
+        window.addEventListener('keydown', (e) => handleInput(e.key));
+    </script>
+</body>
 </html>
