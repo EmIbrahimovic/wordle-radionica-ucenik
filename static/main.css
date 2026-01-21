@@ -54,6 +54,18 @@ h1 {
     gap: 5px;
 }
 
+/* TEACHING MOMENT: Shake animation for feedback on invalid words */
+.shake {
+    animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+}
+
+@keyframes shake {
+    10%, 90% { transform: translate3d(-1px, 0, 0); }
+    20%, 80% { transform: translate3d(2px, 0, 0); }
+    30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+    40%, 60% { transform: translate3d(4px, 0, 0); }
+}
+
 .tile {
     width: 55px;
     height: 55px;
@@ -70,16 +82,36 @@ h1 {
 .tile-present { background-color: var(--present-color); border-color: var(--present-color); }
 .tile-absent { background-color: var(--absent-color); border-color: var(--absent-color); }
 
+/* Toast Notifications */
+#toast {
+    position: fixed;
+    top: 10%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: white;
+    color: black;
+    padding: 10px 20px;
+    border-radius: 4px;
+    font-weight: bold;
+    z-index: 1000;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+}
+
+#toast.visible { opacity: 1; }
+
 #message {
     display: none;
     position: fixed;
-    top: 20%;
+    top: 25%;
     background-color: #ffffff;
     color: #000000;
     padding: 20px 40px;
     border-radius: 8px;
     text-align: center;
     z-index: 10;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
 }
 
 #message.visible { display: block; }
@@ -119,8 +151,11 @@ h1 {
 .reset-btn {
     background-color: var(--bg-color);
     color: white;
-    border: 1px solid white;
-    padding: 8px 16px;
-    margin-top: 10px;
+    border: none;
+    padding: 10px 20px;
+    margin-top: 15px;
     cursor: pointer;
+    font-weight: bold;
+    text-transform: uppercase;
+    border-radius: 4px;
 }

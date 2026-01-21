@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- TEACHING MOMENT: We use double curly braces to insert the 'title' variable from app.py -->
     <title>{{ title }}</title>
     <!-- url_for('static', ...) tells Flask to look in the 'static' folder for our CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='main.css') }}">
@@ -15,11 +16,14 @@
 
     <div id="board"></div>
 
-    <!-- Message which only shows up when the game has ended. Call a reset. -->
+    <!-- This element is for game-over messages -->
     <div id="message">
         <h2 id="status-text"></h2>
         <button onclick="resetGame()" class="reset-btn">Play Again</button>
     </div>
+
+    <!-- TEACHING MOMENT: A separate small div for quick alerts (like "Not in word list") -->
+    <div id="toast"></div>
 
     <div class="keyboard">
         <div class="kb-row" id="kb-row-1"></div>
@@ -28,18 +32,18 @@
     </div>
 
     <script>
-        // Define how many rows (guesses) and columns (letters in a word)
         const ROWS = 6;
         const COLS = 4;
-        let currentRow = 0; // Track how many guesses we have left
-        let currentGuess = ""; // Track what's the current guess.
-        let isGameOver = false; // Track whether we should be getting new inputs?
+        let currentRow = 0;
+        let currentGuess = "";
+        let isGameOver = false;
 
         // Build the game board rows and tiles
         const board = document.getElementById('board');
         for (let i = 0; i < ROWS; i++) {
             const rowDiv = document.createElement('div');
             rowDiv.className = "row";
+            rowDiv.id = `row-${i}`;
             for (let j = 0; j < COLS; j++) {
                 const tile = document.createElement('div');
                 tile.className = "tile";
@@ -65,7 +69,6 @@
         });
 
         function handleInput(key) {
-            // Function to collect the user's keypresses and respond to them. 
             if (isGameOver) return;
             if (key === "ENTER" || key === "Enter") {
                 if (currentGuess.length === COLS) submitGuess();
@@ -85,12 +88,35 @@
             }
         }
 
+        async function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.classList.add('visible');
+            
+            // Shake the current row for emphasis
+            const row = document.getElementById(`row-${currentRow}`);
+            row.classList.add('shake');
+            
+            setTimeout(() => {
+                toast.classList.remove('visible');
+                row.classList.remove('shake');
+            }, 1500);
+        }
+
         async function submitGuess() {
             const response = await fetch('/check', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ guess: currentGuess })
             });
+
+            // TEACHING MOMENT: If the server returns an error (like 400), we handle it here.
+            if (!response.ok) {
+                const errorData = await response.json();
+                showToast(errorData.error || "Invalid Word");
+                return;
+            }
+
             const data = await response.json();
 
             // Color the tiles based on results
@@ -109,7 +135,6 @@
             }
         }
 
-        // Display the window which shows the message. 
         function endGame(msg) {
             isGameOver = true;
             document.getElementById('status-text').textContent = msg;
@@ -121,8 +146,6 @@
             window.location.reload();
         }
 
-        // This is where we tell the window to listen to our keyboard inputs
-        // and respond in a custom way
         window.addEventListener('keydown', (e) => handleInput(e.key));
     </script>
 </body>

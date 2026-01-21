@@ -41,7 +41,9 @@ def check_guess(target, guess):
 @app.route("/")
 def hello_world():
     """
-    TEACHING MOMENT: This is our main route. """
+    TEACHING MOMENT: This is our main route. We name the function 'hello_world' 
+    per your request and pass a 'title' variable to be used in the HTML.
+    """
     if 'target' not in session:
         session['target'] = random.choice(DICTIONARY)
     return render_template("index.html", title="Wordle-4 Lite")
@@ -52,15 +54,18 @@ def check():
     data = request.get_json()
     guess = data.get('guess', '').upper()
     
-    if len(guess) != 4:
-        return jsonify({'error': 'Guess must be 4 letters'}), 400
+    # TEACHING MOMENT: Validation. 
+    # Before checking the colors, we must ensure the word is actually in our allowed list.
+    if guess not in DICTIONARY:
+        return jsonify({'error': 'Not in word list'}), 400
         
     target = session.get('target', 'GOLD')
     results = check_guess(target, guess)
     
     return jsonify({
         'results': results,
-        'won': guess == target
+        'won': guess == target,
+        'target': target
     })
 
 @app.route('/reset', methods=['POST'])
