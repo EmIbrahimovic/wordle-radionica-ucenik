@@ -1,21 +1,21 @@
 /* 
-   TEACHING MOMENT: Standard Wordle styling using CSS variables.
-   Colors are inspired by the official dark mode.
+   TRENUTAK ZA UČENJE: Standardno Wordle stiliziranje koristeći CSS varijable.
+   Boje su inspirisane tamnim načinom rada (dark mode).
 */
 
 :root {
-    --bg-color: #121213;
-    --text-color: #ffffff;
-    --border-color: #3a3a3c;
-    --correct-color: #538d4e;
-    --present-color: #b59f3b;
-    --absent-color: #3a3a3c;
-    --key-bg: #818384;
+    --boja-pozadine: #121213;
+    --boja-teksta: #ffffff;
+    --boja-okvira: #3a3a3c;
+    --boja-tacno: #538d4e;
+    --boja-prisutno: #b59f3b;
+    --boja-odsutno: #3a3a3c;
+    --taster-pozadina: #818384;
 }
 
 body {
-    background-color: var(--bg-color);
-    color: var(--text-color);
+    background-color: var(--boja-pozadine);
+    color: var(--boja-teksta);
     font-family: 'Clear Sans', 'Helvetica Neue', Arial, sans-serif;
     margin: 0;
     display: flex;
@@ -28,7 +28,7 @@ body {
 
 header {
     text-align: center;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--boja-okvira);
     width: 100%;
     max-width: 400px;
     margin-bottom: 20px;
@@ -40,36 +40,36 @@ h1 {
     margin: 10px 0;
 }
 
-.highlight { color: var(--correct-color); }
+.istaknuto { color: var(--boja-tacno); }
 
-#board {
+#tabla {
     display: grid;
     grid-template-rows: repeat(6, 1fr);
     gap: 5px;
     margin-bottom: 20px;
 }
 
-.row {
+.red {
     display: flex;
     gap: 5px;
 }
 
-/* TEACHING MOMENT: Shake animation for feedback on invalid words */
-.shake {
-    animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+/* TRENUTAK ZA UČENJE: Animacija trešnje za netačne riječi */
+.tresi {
+    animation: tresi 0.5s cubic-bezier(.36,.07,.19,.97) both;
 }
 
-@keyframes shake {
+@keyframes tresi {
     10%, 90% { transform: translate3d(-1px, 0, 0); }
     20%, 80% { transform: translate3d(2px, 0, 0); }
     30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
     40%, 60% { transform: translate3d(4px, 0, 0); }
 }
 
-.tile {
+.polje {
     width: 55px;
     height: 55px;
-    border: 2px solid var(--border-color);
+    border: 2px solid var(--boja-okvira);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -78,12 +78,12 @@ h1 {
     text-transform: uppercase;
 }
 
-.tile-correct { background-color: var(--correct-color); border-color: var(--correct-color); }
-.tile-present { background-color: var(--present-color); border-color: var(--present-color); }
-.tile-absent { background-color: var(--absent-color); border-color: var(--absent-color); }
+.polje-tacno { background-color: var(--boja-tacno); border-color: var(--boja-tacno); }
+.polje-prisutno { background-color: var(--boja-prisutno); border-color: var(--boja-prisutno); }
+.polje-odsutno { background-color: var(--boja-odsutno); border-color: var(--boja-odsutno); }
 
-/* Toast Notifications */
-#toast {
+/* Obavještenja (Toast) */
+#obavjestenje {
     position: fixed;
     top: 10%;
     left: 50%;
@@ -99,9 +99,9 @@ h1 {
     pointer-events: none;
 }
 
-#toast.visible { opacity: 1; }
+#obavjestenje.vidljivo { opacity: 1; }
 
-#message {
+#poruka {
     display: none;
     position: fixed;
     top: 25%;
@@ -114,9 +114,9 @@ h1 {
     box-shadow: 0 4px 20px rgba(0,0,0,0.5);
 }
 
-#message.visible { display: block; }
+#poruka.vidljivo { display: block; }
 
-.keyboard {
+.tastatura {
     width: 100%;
     max-width: 500px;
     display: flex;
@@ -125,14 +125,14 @@ h1 {
     margin-top: auto;
 }
 
-.kb-row {
+.tast-red {
     display: flex;
     justify-content: center;
     gap: 6px;
 }
 
-.key {
-    background-color: var(--key-bg);
+.taster {
+    background-color: var(--taster-pozadina);
     color: white;
     border: none;
     height: 58px;
@@ -146,10 +146,10 @@ h1 {
     text-transform: uppercase;
 }
 
-.key-large { flex: 1.5; font-size: 0.75rem; }
+.taster-veliki { flex: 1.5; font-size: 0.75rem; }
 
-.reset-btn {
-    background-color: var(--bg-color);
+.restart-btn {
+    background-color: var(--boja-pozadine);
     color: white;
     border: none;
     padding: 10px 20px;

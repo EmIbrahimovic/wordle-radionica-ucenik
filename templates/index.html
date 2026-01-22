@@ -1,152 +1,154 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="bs">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- TEACHING MOMENT: We use double curly braces to insert the 'title' variable from app.py -->
-    <title>{{ title }}</title>
-    <!-- url_for('static', ...) tells Flask to look in the 'static' folder for our CSS -->
+    <title>{{ naslov }}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='main.css') }}">
 </head>
 <body>
 
     <header>
-        <h1>Word<span class="highlight">4</span></h1>
+        <h1>Riječ<span class="istaknuto">4</span></h1>
     </header>
 
-    <div id="board"></div>
+    <div id="tabla"></div>
 
-    <!-- This element is for game-over messages -->
-    <div id="message">
-        <h2 id="status-text"></h2>
-        <button onclick="resetGame()" class="reset-btn">Play Again</button>
+    <div id="poruka">
+        <h2 id="status-tekst"></h2>
+        <button onclick="ponovoPokreniIgru()" class="restart-btn">Igraj ponovo</button>
     </div>
 
-    <!-- TEACHING MOMENT: A separate small div for quick alerts (like "Not in word list") -->
-    <div id="toast"></div>
+    <div id="obavjestenje"></div>
 
-    <div class="keyboard">
-        <div class="kb-row" id="kb-row-1"></div>
-        <div class="kb-row" id="kb-row-2"></div>
-        <div class="kb-row" id="kb-row-3"></div>
+    <div class="tastatura">
+        <div class="tast-red" id="tast-red-1"></div>
+        <div class="tast-red" id="tast-red-2"></div>
+        <div class="tast-red" id="tast-red-3"></div>
     </div>
 
     <script>
-        const ROWS = 6;
-        const COLS = 4;
-        let currentRow = 0;
-        let currentGuess = "";
-        let isGameOver = false;
+        const REDOVI = 6;
+        const KOLONE = 4;
+        let trenutniRed = 0;
+        let trenutniPogodak = "";
+        let igraJeGotova = false;
 
-        // Build the game board rows and tiles
-        const board = document.getElementById('board');
-        for (let i = 0; i < ROWS; i++) {
-            const rowDiv = document.createElement('div');
-            rowDiv.className = "row";
-            rowDiv.id = `row-${i}`;
-            for (let j = 0; j < COLS; j++) {
-                const tile = document.createElement('div');
-                tile.className = "tile";
-                tile.id = `tile-${i}-${j}`;
-                rowDiv.appendChild(tile);
+        // Inicijalizacija table
+        const tabla = document.getElementById('tabla');
+        for (let i = 0; i < REDOVI; i++) {
+            const redDiv = document.createElement('div');
+            redDiv.className = "red";
+            redDiv.id = `red-${i}`;
+            for (let j = 0; j < KOLONE; j++) {
+                const polje = document.createElement('div');
+                polje.className = "polje";
+                polje.id = `polje-${i}-${j}`;
+                redDiv.appendChild(polje);
             }
-            board.appendChild(rowDiv);
+            tabla.appendChild(redDiv);
         }
 
-        // Virtual keyboard layout
-        const kbLayout = ["QWERTYUIOP", "ASDFGHJKL", ["ENTER", "Z", "X", "C", "V", "B", "N", "M", "DEL"]];
-        kbLayout.forEach((row, idx) => {
-            const container = document.getElementById(`kb-row-${idx + 1}`);
-            const keys = Array.isArray(row) ? row : row.split('');
-            keys.forEach(key => {
-                const btn = document.createElement('button');
-                btn.textContent = key === "DEL" ? "←" : key;
-                btn.className = "key";
-                if (key.length > 1) btn.classList.add('key-large');
-                btn.onclick = () => handleInput(key);
-                container.appendChild(btn);
+        /**
+         * TRENUTAK ZA UČENJE: Bosanska tastatura koristi QWERTZ raspored 
+         * i sadrži dodatna slova Š, Đ, Č, Ć, Ž.
+         */
+        const rasporedTastature = [
+            "QWERTZUIOPŠĐ",
+            "ASDFGHJKLČĆŽ",
+            ["ENTER", "Y", "X", "C", "V", "B", "N", "M", "DEL"]
+        ];
+
+        rasporedTastature.forEach((red, indeks) => {
+            const kontejner = document.getElementById(`tast-red-${indeks + 1}`);
+            const tasteri = Array.isArray(red) ? red : red.split('');
+            tasteri.forEach(taster => {
+                const dugme = document.createElement('button');
+                dugme.textContent = taster === "DEL" ? "←" : taster;
+                dugme.className = "taster";
+                if (taster.length > 1) dugme.classList.add('taster-veliki');
+                dugme.onclick = () => obradiUnos(taster);
+                kontejner.appendChild(dugme);
             });
         });
 
-        function handleInput(key) {
-            if (isGameOver) return;
-            if (key === "ENTER" || key === "Enter") {
-                if (currentGuess.length === COLS) submitGuess();
-            } else if (key === "DEL" || key === "Backspace") {
-                currentGuess = currentGuess.slice(0, -1);
-                updateDisplay();
-            } else if (/^[a-zA-Z]$/.test(key) && currentGuess.length < COLS) {
-                currentGuess += key.toUpperCase();
-                updateDisplay();
+        function obradiUnos(taster) {
+            if (igraJeGotova) return;
+            if (taster === "ENTER" || taster === "Enter") {
+                if (trenutniPogodak.length === KOLONE) posaljiPogodak();
+            } else if (taster === "DEL" || taster === "Backspace") {
+                trenutniPogodak = trenutniPogodak.slice(0, -1);
+                osvjeziPrikaz();
+            } else if (/^[a-zA-ZčćžšđČĆŽŠĐ]$/.test(taster) && trenutniPogodak.length < KOLONE) {
+                // TRENUTAK ZA UČENJE: Regex sada dopušta i naša slova sa kvačicama.
+                trenutniPogodak += taster.toUpperCase();
+                osvjeziPrikaz();
             }
         }
 
-        function updateDisplay() {
-            for (let j = 0; j < COLS; j++) {
-                const tile = document.getElementById(`tile-${currentRow}-${j}`);
-                tile.textContent = currentGuess[j] || "";
+        function osvjeziPrikaz() {
+            for (let j = 0; j < KOLONE; j++) {
+                const polje = document.getElementById(`polje-${trenutniRed}-${j}`);
+                polje.textContent = trenutniPogodak[j] || "";
             }
         }
 
-        async function showToast(msg) {
-            const toast = document.getElementById('toast');
-            toast.textContent = msg;
-            toast.classList.add('visible');
-            
-            // Shake the current row for emphasis
-            const row = document.getElementById(`row-${currentRow}`);
-            row.classList.add('shake');
-            
+        async function prikaziObavjestenje(tekst) {
+            const obavjestenje = document.getElementById('obavjestenje');
+            obavjestenje.textContent = tekst;
+            obavjestenje.classList.add('vidljivo');
+            const red = document.getElementById(`red-${trenutniRed}`);
+            red.classList.add('tresi');
             setTimeout(() => {
-                toast.classList.remove('visible');
-                row.classList.remove('shake');
+                obavjestenje.classList.remove('vidljivo');
+                red.classList.remove('tresi');
             }, 1500);
         }
 
-        async function submitGuess() {
-            const response = await fetch('/check', {
+        async function posaljiPogodak() {
+            const odgovor = await fetch('/provjeri', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ guess: currentGuess })
+                body: JSON.stringify({ pogodak: trenutniPogodak })
             });
 
-            // TEACHING MOMENT: If the server returns an error (like 400), we handle it here.
-            if (!response.ok) {
-                const errorData = await response.json();
-                showToast(errorData.error || "Invalid Word");
+            if (!odgovor.ok) {
+                const greskaPodaci = await odgovor.json();
+                prikaziObavjestenje(greskaPodaci.greska || "Neispravna riječ");
                 return;
             }
 
-            const data = await response.json();
+            const podaci = await odgovor.json();
 
-            // Color the tiles based on results
-            data.results.forEach((res, j) => {
-                const tile = document.getElementById(`tile-${currentRow}-${j}`);
-                tile.classList.add(`tile-${res.status}`);
+            podaci.rezultati.forEach((rez, j) => {
+                const polje = document.getElementById(`polje-${trenutniRed}-${j}`);
+                if (rez.status === 'tacno') polje.classList.add('polje-tacno');
+                else if (rez.status === 'prisutno') polje.classList.add('polje-prisutno');
+                else polje.classList.add('polje-odsutno');
             });
 
-            if (data.won) {
-                endGame(`Genius! The word was ${data.target} 🎉`);
-            } else if (currentRow === ROWS - 1) {
-                endGame(`Nice try! The word was ${data.target}.`);
+            if (podaci.pobjeda) {
+                zavrsiIgru(`Genijalno! Riječ je bila ${podaci.ciljna} 🎉`);
+            } else if (trenutniRed === REDOVI - 1) {
+                zavrsiIgru(`Dobar pokušaj! Riječ je bila ${podaci.ciljna}.`);
             } else {
-                currentRow++;
-                currentGuess = "";
+                trenutniRed++;
+                trenutniPogodak = "";
             }
         }
 
-        function endGame(msg) {
-            isGameOver = true;
-            document.getElementById('status-text').textContent = msg;
-            document.getElementById('message').classList.add('visible');
+        function zavrsiIgru(tekst) {
+            igraJeGotova = true;
+            document.getElementById('status-tekst').textContent = tekst;
+            document.getElementById('poruka').classList.add('vidljivo');
         }
 
-        async function resetGame() {
-            await fetch('/reset', { method: 'POST' });
+        async function ponovoPokreniIgru() {
+            await fetch('/restart', { method: 'POST' });
             window.location.reload();
         }
 
-        window.addEventListener('keydown', (e) => handleInput(e.key));
+        window.addEventListener('keydown', (e) => obradiUnos(e.key));
     </script>
 </body>
 </html>

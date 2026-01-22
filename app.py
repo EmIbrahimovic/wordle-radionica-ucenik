@@ -1,77 +1,85 @@
 import random
 from flask import Flask, request, jsonify, session, render_template
+import unicodedata
 
-# 1. THE APP: We initialize the Flask application here.
+# 1. APLIKACIJA: Ovdje inicijaliziramo Flask aplikaciju.
 app = Flask(__name__)
 
-# Secret key is required to store the target word in the user's browser session.
-app.secret_key = 'high_school_wordle_secret'
+# Tajni ključ je neophodan za čuvanje ciljne riječi u sesiji korisnikovog preglednika.
+app.secret_key = 'tajna_wordle_srednja_skola'
 
-# 2. THE DICTIONARY: A simple list of 20 4-letter words for our game.
-DICTIONARY = [
-    'GOLD', 'BLUE', 'FIRE', 'WIND', 'ROCK', 'STAR', 'MOON', 'TREE', 
-    'BIRD', 'FISH', 'PARK', 'CAKE', 'BAKE', 'READ', 'CODE', 'GAME', 
-    'SHIP', 'LOVE', 'HOPE', 'KIND'
-]
+def normalizuj(tekst):
+    """
+    TRENUTAK ZA UČENJE: Unicode normalizacija (NFC) osigurava da npr. slovo 'Š' 
+    uvijek bude predstavljeno istim kodom, bez obzira na operativni sistem.
+    """
+    if not tekst:
+        return ""
+    # 'NFC' spaja osnovno slovo i kvačicu u jedan jedinstven karakter.
+    return unicodedata.normalize('NFC', tekst.strip().upper())
 
-def check_guess(target, guess):
+# 2. RJEČNIK: Lista od 20 bosanskih riječi od 4 slova sa dijakritičkim znakovima.
+# TRENUTAK ZA UČENJE: Python 3 podržava Unicode, pa su slova poput Č, Ć, Ž sasvim regularna.
+RJECNIK = [normalizuj(r) for r in [
+    'RUŽA', 'KUĆA', 'KIŠA', 'ČAŠA', 'VOĆE', 'KOŽA', 'ŠUMA', 'LAĐA', 
+    'ŽABA', 'ČVOR', 'VRAČ', 'ČELO', 'DUŠA', 'NOĆI', 'PEĆI', 'MRAZ', 
+    'BUĐA', 'MEČE', 'ŽITO', 'BIĆE'
+]]
+
+def provjeri_pogodak(ciljna, pogodak):
     """
-    TEACHING MOMENT: This function compares the guess to the secret word.
-    It returns a list of results (correct, present, or absent) for each letter.
+    TRENUTAK ZA UČENJE: Ova funkcija upoređuje pogodak sa tajnom rječju.
+    Vraća listu rezultata (tačno, prisutno ili odsutno) za svako slovo.
     """
-    result = [{'letter': char, 'status': 'absent'} for char in guess]
-    target_list = list(target)
-    
-    # First pass: Mark letters in the correct position (Green)
+    rezultat = [{'slovo': znak, 'status': 'odsutno'} for znak in pogodak]
+    lista_ciljne = list(ciljna)
+    # Prvi prolaz: Označi slova na tačnoj poziciji (Zeleno)
     for i in range(4):
-        if guess[i] == target[i]:
-            result[i]['status'] = 'correct'
-            target_list[i] = None
+        if pogodak[i] == ciljna[i]:
+            rezultat[i]['status'] = 'tacno'
+            lista_ciljne[i] = None
             
-    # Second pass: Mark letters that exist but are in the wrong spot (Yellow)
+    # Drugi prolaz: Označi slova koja postoje ali su na pogrešnom mjestu (Žuto)
     for i in range(4):
-        if result[i]['status'] == 'correct':
+        if rezultat[i]['status'] == 'tacno':
             continue
-        if guess[i] in target_list:
-            result[i]['status'] = 'present'
-            target_list[target_list.index(guess[i])] = None
+        if pogodak[i] in lista_ciljne:
+            rezultat[i]['status'] = 'prisutno'
+            lista_ciljne[lista_ciljne.index(pogodak[i])] = None
             
-    return result
+    return rezultat
 
 @app.route("/")
-def hello_world():
-    """
-    TEACHING MOMENT: This is our main route. We name the function 'hello_world' 
-    per your request and pass a 'title' variable to be used in the HTML.
-    """
-    if 'target' not in session:
-        session['target'] = random.choice(DICTIONARY)
-    return render_template("index.html", title="Wordle-4 Lite")
+def pozdrav_svijete():
+    """Glavna ruta koja inicijalizira igru."""
+    if 'ciljna_rijec' not in session:
+        session['ciljna_rijec'] = random.choice(RJECNIK)
+    print("Tajna riječ je ", session['ciljna_rijec'])
+    return render_template("index.html", naslov="Wordle-4")
 
-@app.route('/check', methods=['POST'])
-def check():
-    """Receives a guess and returns how many letters were right."""
-    data = request.get_json()
-    guess = data.get('guess', '').upper()
+@app.route('/provjeri', methods=['POST'])
+def provjeri():
+    """Prima pogodak i provjerava ga protiv rječnika i ciljne riječi."""
+    podaci = request.get_json()
+    pogodak = normalizuj(podaci.get('pogodak', ''))
     
-    # TEACHING MOMENT: Validation. 
-    # Before checking the colors, we must ensure the word is actually in our allowed list.
-    if guess not in DICTIONARY:
-        return jsonify({'error': 'Not in word list'}), 400
+    # Provjera da li je riječ u rječniku
+    if pogodak not in RJECNIK:
+        return jsonify({'greska': 'Riječ nije u rječniku'}), 400
         
-    target = session.get('target', 'GOLD')
-    results = check_guess(target, guess)
+    ciljna = session.get('ciljna_rijec', normalizuj('RUŽA'))
+    rezultati = provjeri_pogodak(ciljna, pogodak)
     
     return jsonify({
-        'results': results,
-        'won': guess == target,
-        'target': target
+        'rezultati': rezultati,
+        'pobjeda': pogodak == ciljna,
+        'ciljna': ciljna
     })
 
-@app.route('/reset', methods=['POST'])
-def reset():
-    """Starts a new game by clearing the old word."""
-    session['target'] = random.choice(DICTIONARY)
+@app.route('/restart', methods=['POST'])
+def restart():
+    """Restartuje sesiju sa novom riječi."""
+    session['ciljna_rijec'] = random.choice(RJECNIK)
     return jsonify({'status': 'ok'})
 
 if __name__ == "__main__":

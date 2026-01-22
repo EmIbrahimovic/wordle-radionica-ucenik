@@ -1,5 +1,5 @@
 {
-  "name": "Flask Wordle-4 Lite",
-  "description": "A minimalist 4-letter Wordle clone using Python Flask and Vanilla JS, designed for educational purposes.",
+  "name": "Bosanski Wordle-4",
+  "description": "Minimalistički Wordle klon od 4 slova koristeći Python Flask i obični JS, dizajniran u edukativne svrhe.",
   "requestFramePermissions": []
 }
